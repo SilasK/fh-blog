@@ -24,6 +24,20 @@ app, rt = fast_app(
     live=True,
 )
 
+# Load posts and calculate tags once at startup
+ALL_POSTS = load_posts("posts")
+NON_DRAFT_POSTS = [post for post in ALL_POSTS if not post.metadata.get("draft", False)]
+
+# Calculate tag frequencies once
+TAG_FREQUENCIES = {}
+for post in NON_DRAFT_POSTS:
+    for tag in post.tags:
+        TAG_FREQUENCIES[tag] = TAG_FREQUENCIES.get(tag, 0) + 1
+
+# Get top 5 tags sorted by frequency (and alphabetically for ties)
+TOP_TAGS = sorted(TAG_FREQUENCIES.items(), key=lambda x: (-x[1], x[0]))[:5]
+TOP_TAGS = [t[0] for t in TOP_TAGS]
+
 
 def twitter_headers(post: Post = None):
     """Generate meta tags for Twitter Cards and Open Graph (works for LinkedIn, Facebook, etc.)"""
@@ -154,32 +168,18 @@ def TagButton(tag, is_selected=False, cls=""):
 
 def get_posts_container(tag: str = None):
     """Helper function to generate the posts container content"""
-    # Load posts
-    posts = load_posts("posts")
-
-    # Filter posts if tag is provided
+    # Use cached posts instead of loading on each request
     filtered_posts = [
         post
-        for post in posts
-        if (not tag or tag in post.tags) and not post.metadata.get("draft", False)
+        for post in NON_DRAFT_POSTS
+        if not tag or tag in post.tags
     ]
-
-    # Get tag frequencies and sort by most common, then alphabetically for ties
-    tag_freq = {}
-    for post in posts:
-        if not post.metadata.get("draft", False):
-            for t in post.tags:
-                tag_freq[t] = tag_freq.get(t, 0) + 1
-
-    # Get top 5 tags sorted by frequency (and alphabetically for ties)
-    top_tags = sorted(tag_freq.items(), key=lambda x: (-x[1], x[0]))[:5]
-    top_tags = [t[0] for t in top_tags]
 
     return DivVStacked(
         H3("Latest Posts"),
-        # Top 5 tags filter
+        # Top 5 tags filter using cached TOP_TAGS
         DivLAligned(
-            *[TagButton(t, is_selected=(t == tag), cls="mr-2 mb-2") for t in top_tags],
+            *[TagButton(t, is_selected=(t == tag), cls="mr-2 mb-2") for t in TOP_TAGS],
             cls="flex-wrap",
         ),
         Grid(
@@ -206,27 +206,7 @@ def get_posts_container_route(tag: str = None):
 
 @rt("/")
 def get(tag: str = None):
-    # Load posts on each request
-    posts = load_posts("posts")
-
-    # Filter posts if tag is provided
-    filtered_posts = [
-        post
-        for post in posts
-        if (not tag or tag in post.tags) and not post.metadata.get("draft", False)
-    ]
-
-    # Get tag frequencies and sort by most common, then alphabetically for ties
-    tag_freq = {}
-    for post in posts:
-        if not post.metadata.get("draft", False):
-            for t in post.tags:
-                tag_freq[t] = tag_freq.get(t, 0) + 1
-
-    # Get top 5 tags sorted by frequency (and alphabetically for ties)
-    top_tags = sorted(tag_freq.items(), key=lambda x: (-x[1], x[0]))[:5]
-    top_tags = [t[0] for t in top_tags]
-
+    # Use cached posts instead of loading on each request
     return (
         *twitter_headers(),
         Title(config["blog"]["title"]),
@@ -254,11 +234,8 @@ def get(tag: str = None):
 
 @rt("/post/{post_slug}")
 def get(post_slug: str):
-    # Load posts on each request
-    posts = load_posts("posts")
-
-    # Find the post or return 404
-    post = next((p for p in posts if p.slug == post_slug), None)
+    # Use cached posts instead of loading on each request
+    post = next((p for p in ALL_POSTS if p.slug == post_slug), None)
     if not post:
         return Title("404 - Aw, man!"), Container(
             H1("404 - Aw, man!", cls="text-4xl font-bold mt-8"),
