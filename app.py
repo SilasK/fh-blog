@@ -122,18 +122,86 @@ def BlogPostCard(post):
 
 
 def TagButton(tag, is_selected=False, cls=""):
-    """Creates a clickable tag button with selected state"""
-    base_cls = "px-3 py-1 rounded-full text-sm transition-colors duration-200"
+    """Creates a clickable tag button with selected state using HTMX"""
+    base_cls = (
+        "px-3 py-1 rounded-full text-sm transition-colors duration-200 cursor-pointer"
+    )
     selected_cls = (
         "bg-gray-800 text-white"
         if is_selected
         else "bg-gray-200 hover:bg-gray-300 text-gray-700"
     )
-    return A(
-        tag.replace("-", " "),
-        href=f"/?tag={tag}" if not is_selected else "/",
-        cls=f"{base_cls} {selected_cls} {cls}",
+
+    if is_selected:
+        # If selected, clicking should clear the filter
+        return Button(
+            tag.replace("-", " "),
+            hx_get="/posts-container",
+            hx_target="#posts-container",
+            hx_swap="outerHTML",
+            cls=f"{base_cls} {selected_cls} {cls}",
+        )
+    else:
+        # If not selected, clicking should filter by this tag
+        return Button(
+            tag.replace("-", " "),
+            hx_get=f"/posts-container?tag={tag}",
+            hx_target="#posts-container",
+            hx_swap="outerHTML",
+            cls=f"{base_cls} {selected_cls} {cls}",
+        )
+
+
+def get_posts_container(tag: str = None):
+    """Helper function to generate the posts container content"""
+    # Load posts
+    posts = load_posts("posts")
+
+    # Filter posts if tag is provided
+    filtered_posts = [
+        post
+        for post in posts
+        if (not tag or tag in post.tags) and not post.metadata.get("draft", False)
+    ]
+
+    # Get tag frequencies and sort by most common, then alphabetically for ties
+    tag_freq = {}
+    for post in posts:
+        if not post.metadata.get("draft", False):
+            for t in post.tags:
+                tag_freq[t] = tag_freq.get(t, 0) + 1
+
+    # Get top 5 tags sorted by frequency (and alphabetically for ties)
+    top_tags = sorted(tag_freq.items(), key=lambda x: (-x[1], x[0]))[:5]
+    top_tags = [t[0] for t in top_tags]
+
+    return DivVStacked(
+        H3("Latest Posts"),
+        # Top 5 tags filter
+        DivLAligned(
+            *[TagButton(t, is_selected=(t == tag), cls="mr-2 mb-2") for t in top_tags],
+            cls="flex-wrap",
+        ),
+        Grid(
+            *[
+                BlogPostCard(post)
+                for post in filtered_posts[: config["settings"]["posts_per_page"]]
+            ],
+            cols_sm=1,
+            cols_md=1,
+            cols_lg=1,
+            cols_xl=1,
+            cols_2xl=1,
+            gap=6,
+        ),
+        id="posts-container",
     )
+
+
+@rt("/posts-container")
+def get_posts_container_route(tag: str = None):
+    """Route that returns just the posts container for HTMX updates"""
+    return get_posts_container(tag)
 
 
 @rt("/")
@@ -177,32 +245,8 @@ def get(tag: str = None):
                 ),
                 Divider(cls="my-8"),
             ),
-            # Blog posts section
-            DivVStacked(
-                H3("Latest Posts"),
-                # Top 5 tags filter
-                DivLAligned(
-                    *[
-                        TagButton(t, is_selected=(t == tag), cls="mr-2 mb-2")
-                        for t in top_tags
-                    ],
-                    cls="flex-wrap",
-                ),
-                Grid(
-                    *[
-                        BlogPostCard(post)
-                        for post in filtered_posts[
-                            : config["settings"]["posts_per_page"]
-                        ]
-                    ],
-                    cols_sm=1,
-                    cols_md=1,
-                    cols_lg=1,
-                    cols_xl=1,
-                    cols_2xl=1,
-                    gap=6,
-                ),
-            ),
+            # Blog posts section - use the helper function
+            get_posts_container(tag),
             cls="max-w-4xl mx-auto px-4 py-8",
         ),
     )
