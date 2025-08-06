@@ -1,0 +1,33 @@
+[project]
+name = "fh-blog"
+version = "0.1.0"
+description = "A FastHTML blog with markdown posts"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["osx-arm64"]
+
+[tool.pixi.tasks]
+dev = "python app.py"
+start = "python app.py"
+
+[tool.pixi.dependencies]
+python = ">=3.12"
+python-fasthtml = ">=0.12.23,<0.13"
+pyyaml = ">=6.0"
+monsterui = ">=1.0.19,<2"
+pydantic = ">=2.0.0"
+
+[tool.pixi.pypi-dependencies]
+fh-posts = "*"
+

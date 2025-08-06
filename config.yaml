@@ -1,0 +1,50 @@
+# Blog Configuration
+blog:
+  title: "Silas Kieser's Blog"
+  subtitle: "Sharing what I'm learning, teaching, and exploring in technology."
+  description: "A blog about technology, programming, and data science by Silas Kieser"
+  url: "https://silaskieser.dev"  # Your blog's URL
+  
+# Author Information
+author:
+  name: "Silas Kieser"
+  email: "silas.kieser@gmail.com" 
+  bio: "Technology enthusiast, educator, and developer passionate about Python, data science, and web development."
+
+# Social Media Links
+social:
+  github:
+    url: "https://github.com/silask"
+    display: true
+  x:
+    url: "https://twitter.com/silaskieser"
+    display: true
+  bluesky:
+    url: "https://bsky.app/profile/silaskieser.bsky.social"
+    display: false
+  linkedin:
+    url: "https://linkedin.com/in/silas-kieser-9016ba5a/"
+    display: true  # Set to true to display LinkedIn
+  mastodon:
+    url: "https://mastodon.social/@silaskieser"
+    display: false  # Set to true if you want to display Mastodon
+
+# SEO and Meta Information
+seo:
+  twitter_card_image: "https://silaskieser.dev/images/twitter-card.jpg"
+  favicon: "/images/favicon.ico"
+  apple_touch_icon: "/images/apple-touch-icon.png"
+
+# Blog Settings
+settings:
+  posts_per_page: 20
+  show_read_time: false 
+  show_tags: true
+  enable_comments: false  # Set to true if you want to add comments system
+  analytics_id: ""  # Add Google Analytics ID if needed
+  
+# Theme Settings
+theme:
+  primary_color: "zinc"  # MonsterUI theme
+  code_highlight_theme: "atom-one-dark"
+  supported_languages: ["python", "bash", "yaml", "json", "javascript", "sql"]
