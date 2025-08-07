@@ -26,11 +26,11 @@ app, rt = fast_app(
 
 # Load posts and calculate tags once at startup
 ALL_POSTS = load_posts("posts")
-NON_DRAFT_POSTS = [post for post in ALL_POSTS if not post.metadata.get("draft", False)]
+POSTS = [post for post in ALL_POSTS if not post.metadata.get("draft", False)]
 
 # Calculate tag frequencies once
 TAG_FREQUENCIES = {}
-for post in NON_DRAFT_POSTS:
+for post in POSTS:
     for tag in post.tags:
         TAG_FREQUENCIES[tag] = TAG_FREQUENCIES.get(tag, 0) + 1
 
@@ -114,7 +114,7 @@ def BlogPostCard(post):
                 H3(post.title, cls=TextPresets.bold_lg),
                 P(post.date, cls=TextPresets.muted_sm),
                 P(post.summary, cls=TextPresets.muted_sm),
-                # Updated tags section with smaller, more compact styling
+                # Tags
                 DivLAligned(
                     *[
                         P(
@@ -169,11 +169,7 @@ def TagButton(tag, is_selected=False, cls=""):
 def get_posts_container(tag: str = None):
     """Helper function to generate the posts container content"""
     # Use cached posts instead of loading on each request
-    filtered_posts = [
-        post
-        for post in NON_DRAFT_POSTS
-        if not tag or tag in post.tags
-    ]
+    filtered_posts = [post for post in POSTS if not tag or tag in post.tags]
 
     return DivVStacked(
         H3("Latest Posts"),
