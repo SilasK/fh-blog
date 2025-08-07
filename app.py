@@ -129,7 +129,7 @@ def BlogPostCard(post):
                 ),
                 cls="h-full",  # Make the inner content container full height; makes all the cards the same height
             ),
-            cls="hover:shadow-lg transition-shadow duration-200 h-full",  # Make card full height
+            cls="hover:shadow-lg transition-shadow duration-200 h-full rounded-xl",  # Added rounded-xl for more rounded edges
         ),
         href=f"/post/{post.slug}",
     )
