@@ -69,7 +69,7 @@ cuBLAS and the CUDA allocator need headroom. Rule of thumb: budget 10–20% of y
 
 For a single sequence, batch size 1, context length `S`, FP16:
 
-```
+```python
 Total ≈ Weights + KV(S) + Activations + Workspace
       ≈ 140 GB  + ~0.5 GB per 1k tokens + a few GB + headroom
 ```
