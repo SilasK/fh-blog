@@ -1,13 +1,19 @@
 from fasthtml.common import *
 from monsterui.all import *
 from fh_posts.all import *
+from bs4 import BeautifulSoup
 import os
 import yaml
+from pathlib import Path
 
 
 # Load configuration
 def load_config():
-    with open("config.yaml", "r") as f:
+    """Load config.yaml, falling back to config.example.yaml if it doesn't exist."""
+    config_path = Path("config.yaml") if Path("config.yaml").exists() else Path("config.example.yaml")
+    if config_path.name == "config.example.yaml":
+        print(f"WARNING: config.yaml not found, using {config_path} as default.")
+    with open(config_path, "r") as f:
         return yaml.safe_load(f)
 
 
@@ -21,12 +27,38 @@ app, rt = fast_app(
             light=config["theme"]["code_highlight_theme"],
         ),
     ),
-    live=True,
+    live=os.environ.get("RELOAD") == "1",
 )
 
+def load_posts_recursive(path):
+    """Load posts from `path` including subfolders, slug = path relative to `path` (no extension).
+
+    e.g. posts/post/foo.md -> slug 'post/foo' -> URL /post/foo
+         posts/events/meetup.md -> slug 'events/meetup' -> URL /events/meetup
+    """
+    posts_dir = Path(path)
+    posts = []
+    for file_path in posts_dir.rglob("*.md"):
+        try:
+            metadata = extract_frontmatter(file_path)
+            slug = str(file_path.relative_to(posts_dir)).rsplit(".", 1)[0]
+            posts.append(Post(file_path, metadata, slug))
+        except Exception as e:
+            logger.error(f"Error processing {file_path}: {e}")
+    for file_path in posts_dir.rglob("*.ipynb"):
+        try:
+            metadata = extract_notebook_frontmatter(file_path)
+            slug = str(file_path.relative_to(posts_dir)).rsplit(".", 1)[0]
+            posts.append(Post(file_path, metadata, slug))
+        except Exception as e:
+            logger.error(f"Error processing {file_path}: {e}")
+    return sorted(posts, key=lambda p: get_post_date(p), reverse=True)
+
+
 # Load posts and calculate tags once at startup
-ALL_POSTS = load_posts("posts")
+ALL_POSTS = load_posts_recursive("posts")
 POSTS = [post for post in ALL_POSTS if not post.metadata.get("draft", False)]
+SLUG_TO_POST = {post.slug: post for post in ALL_POSTS}
 
 # Calculate tag frequencies once
 TAG_FREQUENCIES = {}
@@ -60,7 +92,7 @@ def twitter_headers(post: Post = None):
             ),
             Meta(property="og:image", content=config["seo"]["twitter_card_image"]),
             Meta(
-                property="og:url", content=f"{config['blog']['url']}/post/{post.slug}"
+                property="og:url", content=f"{config['blog']['url']}/{post.slug}"
             ),
             Meta(property="og:site_name", content=config["blog"]["title"]),
         )
@@ -106,6 +138,43 @@ def get_social_links():
     return links
 
 
+def resolve_relative_links(html: str) -> str:
+    """Resolve relative markdown links (e.g. `[post](post/other-post.md)`) to real post URLs.
+
+    Links in markdown posts may reference other posts by their file path
+    under `posts/` instead of the full URL, e.g.:
+        [Getting Started](post/getting-started-with-fasthtml.md)
+        [Event](events/meetup.md)
+    The folder is part of the URL, so `post/foo.md` -> `/post/foo` and
+    `events/meetup.md` -> `/events/meetup`. Authors don't hard-code the
+    site's base URL or the `.md` extension.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    for a in soup.find_all("a", href=True):
+        href = a["href"].strip()
+        if href.startswith(("http://", "https://", "mailto:", "#", "/", "?")):
+            continue
+        path, _, fragment = href.partition("#")
+        path, _, query = path.partition("?")
+        suffix = Path(path).suffix
+        if suffix not in (".md", ".ipynb"):
+            continue
+        slug = str(Path(path).with_suffix(""))
+        if slug not in SLUG_TO_POST:
+            continue
+        resolved = f"/{slug}"
+        if query:
+            resolved += f"?{query}"
+        if fragment:
+            resolved += f"#{fragment}"
+        a["href"] = resolved
+        if "target" in a.attrs:
+            del a["target"]  # internal links should open in the same tab
+        if "rel" in a.attrs:
+            del a["rel"]
+    return str(soup)
+
+
 def BlogPostCard(post):
     """Creates a card for a blog post preview"""
     return A(
@@ -131,7 +200,7 @@ def BlogPostCard(post):
             ),
             cls="hover:shadow-lg transition-shadow duration-200 h-full rounded-xl",  # Added rounded-xl for more rounded edges
         ),
-        href=f"/post/{post.slug}",
+        href=f"/{post.slug}",
     )
 
 
@@ -228,7 +297,7 @@ def get(tag: str = None):
     )
 
 
-@rt("/post/{post_slug}")
+@rt("/{post_slug:path}")
 def get(post_slug: str):
     # Use cached posts instead of loading on each request
     post = next((p for p in ALL_POSTS if p.slug == post_slug), None)
@@ -243,7 +312,7 @@ def get(post_slug: str):
         )
 
     # Process the content and get HTML
-    rendered_content = post.render(open_links_new_window=True)
+    rendered_content = resolve_relative_links(str(post.render(open_links_new_window=True)))
 
     return (
         *twitter_headers(post),
@@ -266,4 +335,4 @@ def get(post_slug: str):
 
 
 if __name__ == "__main__":
-    serve(port=8001, reload=True)
+    serve(port=8001, reload=os.environ.get("RELOAD") == "1")

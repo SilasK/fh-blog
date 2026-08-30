@@ -1,0 +1,53 @@
+# Blog Configuration
+# Copy this file to `config.yaml` and fill in your values.
+# The app falls back to this file if `config.yaml` doesn't exist.
+
+blog:
+  title: "Your Blog Title"
+  subtitle: "A short tagline about your blog."
+  description: "A longer description used for SEO meta tags."
+  url: "https://example.com"  # Your blog's public URL
+
+# Author Information
+author:
+  name: "Your Name"
+  email: "you@example.com"
+  bio: "A short bio about you."
+
+# Social Media Links
+social:
+  github:
+    url: "https://github.com/yourusername"
+    display: false
+  x:
+    url: "https://twitter.com/yourusername"
+    display: false
+  bluesky:
+    url: "https://bsky.app/profile/yourusername.bsky.social"
+    display: false
+  linkedin:
+    url: "https://linkedin.com/in/yourusername"
+    display: false
+  mastodon:
+    url: "https://mastodon.social/@yourusername"
+    display: false
+
+# SEO and Meta Information
+seo:
+  twitter_card_image: "/images/twitter-card.jpg"  # Path or absolute URL to a 1200x630 image
+  favicon: "/images/favicon.ico"
+  apple_touch_icon: "/images/apple-touch-icon.png"
+
+# Blog Settings
+settings:
+  posts_per_page: 20
+  show_read_time: false
+  show_tags: true
+  enable_comments: false  # Set to true if you want to add a comments system
+  analytics_id: ""  # Add Google Analytics ID if needed
+
+# Theme Settings
+theme:
+  primary_color: "zinc"  # MonsterUI theme
+  code_highlight_theme: "atom-one-dark"
+  supported_languages: ["python", "bash", "yaml", "json", "javascript", "sql"]
