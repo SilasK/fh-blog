@@ -48,9 +48,6 @@ Thumbs.db
 # Session files
 .sesskey
 
-# Local config (personal values, don't commit)
-config.yaml
-
 # Logs
 *.log
 

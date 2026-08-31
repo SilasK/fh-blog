@@ -25,13 +25,11 @@ A personal blog engine built with [FastHTML](https://fastht.ml) and [MonsterUI](
    pixi install
    ```
 
-3. Create your configuration:
-
-   ```bash
-   cp config.example.yaml config.yaml
-   ```
-
-   Then edit `config.yaml` with your title, subtitle, URL, social links, and theme.
+3. The blog ships with a working `config.yaml` (the demo config used by the
+   example posts), so it runs as-is. To make it yours, edit `config.yaml`
+   (title, subtitle, URL, social links, theme). `config.example.yaml` is the
+   annotated reference schema; the app also falls back to it if `config.yaml`
+   is missing.
 
 4. Write a post: drop a Markdown file (or `.ipynb`) into `posts/`. Subfolders
    become URL prefixes — `posts/post/foo.md` is served at `/post/foo`,
